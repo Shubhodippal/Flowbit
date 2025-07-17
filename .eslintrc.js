@@ -44,7 +44,7 @@ module.exports = {
   ],
   overrides: [
     {
-      files: ['**/seed.js', '**/server.js', '**/services/*.js', '**/contexts/*.js', '**/routes/webhooks.js'],
+      files: ['**/seed.js', '**/server.js', '**/services/*.js', '**/contexts/*.js', '**/routes/webhooks.js', '**/tests/**/*.js', '**/scripts/**/*.js'],
       rules: {
         'no-console': 'off'
       }

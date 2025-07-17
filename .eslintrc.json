@@ -33,7 +33,7 @@
   },
   "overrides": [
     {
-      "files": ["api/**/*.js"],
+      "files": ["api/**/*.js", "**/tests/**/*.js", "**/scripts/**/*.js"],
       "env": {
         "node": true,
         "jest": true

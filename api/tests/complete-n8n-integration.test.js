@@ -130,7 +130,7 @@ describe('Complete n8n Workflow Integration Test', () => {
 
       // Step 4: Test webhook secret validation
       console.log('\\n4️⃣ Testing webhook security...');
-      const invalidSecretResponse = await request(app)
+      await request(app)
         .post('/webhook/ticket-done')
         .set('x-webhook-secret', 'invalid-secret')
         .send({ ticketId: ticketId, status: 'closed' })
