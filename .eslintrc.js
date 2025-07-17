@@ -58,6 +58,12 @@ module.exports = {
         'cypress/no-unnecessary-waiting': 'error',
         'cypress/assertion-before-screenshot': 'warn'
       }
+    },
+    {
+      files: ['**/seed.js', '**/server.js', '**/services/*.js', '**/contexts/*.js', '**/routes/webhooks.js'],
+      rules: {
+        'no-console': 'off'
+      }
     }
   ]
 };

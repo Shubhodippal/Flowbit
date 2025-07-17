@@ -16,7 +16,7 @@ if (!app.document.head.querySelector('[data-hide-command-log-request]')) {
 }
 
 // Global error handling
-Cypress.on('uncaught:exception', (err, runnable) => {
+Cypress.on('uncaught:exception', (err, _runnable) => {
   // Returning false here prevents Cypress from failing the test
   // on uncaught exceptions that might be from the application
   if (err.message.includes('ResizeObserver') || 

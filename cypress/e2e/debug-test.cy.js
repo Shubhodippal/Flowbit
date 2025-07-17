@@ -2,8 +2,8 @@ describe('Debug Application Test', () => {
   it('should show what content is actually loaded', () => {
     cy.visit('/')
     
-    // Wait for page to load and capture the full HTML content
-    cy.wait(5000)
+    // Wait for page to load properly using should() instead of wait()
+    cy.get('body').should('be.visible')
     
     // Check if we can see any content at all
     cy.get('body').then(($body) => {

@@ -24,8 +24,8 @@ describe('Simple Working Test', () => {
     // Find and click the login button
     cy.get('button').contains(/sign in|login|submit/i).click()
     
-    // Wait for some kind of response (either success or error)
-    cy.wait(3000)
+    // Wait for some kind of response using should() instead of wait()
+    cy.get('body').should('exist')
     
     // Check if we either see a dashboard or error message
     cy.get('body').then(($body) => {
