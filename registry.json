@@ -1,0 +1,43 @@
+{
+  "tenants": {
+    "techcorp": {
+      "name": "TechCorp",
+      "customerId": "techcorp",
+      "screens": [
+        {
+          "id": "support-tickets",
+          "name": "Support Tickets",
+          "url": "http://localhost:3002/remoteEntry.js",
+          "scope": "supportTicketsApp",
+          "module": "./SupportTicketsApp"
+        }
+      ]
+    },
+    "logisticsco": {
+      "name": "LogisticsCo",
+      "customerId": "logisticsco",
+      "screens": [
+        {
+          "id": "support-tickets",
+          "name": "Support Tickets",
+          "url": "http://localhost:3002/remoteEntry.js",
+          "scope": "supportTicketsApp",
+          "module": "./SupportTicketsApp"
+        }
+      ]
+    },
+    "retailgmbh": {
+      "name": "RetailGmbH",
+      "customerId": "retailgmbh",
+      "screens": [
+        {
+          "id": "support-tickets",
+          "name": "Support Tickets",
+          "url": "http://localhost:3002/remoteEntry.js",
+          "scope": "supportTicketsApp",
+          "module": "./SupportTicketsApp"
+        }
+      ]
+    }
+  }
+}

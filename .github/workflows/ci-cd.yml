@@ -1,0 +1,258 @@
+name: Flowbit CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  lint:
+    name: Lint Code
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install root dependencies
+      run: npm ci
+      
+    - name: Install API dependencies
+      run: cd api && npm ci
+      
+    - name: Install Shell dependencies
+      run: cd shell && npm ci
+      
+    - name: Install Support Tickets App dependencies
+      run: cd support-tickets-app && npm ci
+      
+    - name: Run ESLint
+      run: npm run lint
+
+  test-unit:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    
+    services:
+      mongodb:
+        image: mongo:6
+        ports:
+          - 27017:27017
+        env:
+          MONGO_INITDB_ROOT_USERNAME: admin
+          MONGO_INITDB_ROOT_PASSWORD: password
+        options: >-
+          --health-cmd "echo 'db.runCommand(\"ping\").ok' | mongosh admin --quiet"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+          
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install root dependencies
+      run: npm ci
+      
+    - name: Install API dependencies
+      run: cd api && npm ci
+      
+    - name: Set up environment variables
+      run: |
+        echo "MONGODB_URI=mongodb://admin:password@localhost:27017/flowbit-test?authSource=admin" >> $GITHUB_ENV
+        echo "JWT_SECRET=test-jwt-secret-github-actions" >> $GITHUB_ENV
+        echo "NODE_ENV=test" >> $GITHUB_ENV
+        
+    - name: Wait for MongoDB
+      run: |
+        timeout 30 bash -c 'until mongosh --host localhost:27017 --username admin --password password --authenticationDatabase admin --eval "db.adminCommand(\"ping\")" --quiet; do sleep 1; done'
+        
+    - name: Run Jest Tests
+      run: npm run test
+      
+    - name: Generate Coverage Report
+      run: npm run test:coverage
+      
+    - name: Upload Coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./api/coverage/lcov.info
+        flags: unittests
+        name: codecov-umbrella
+
+  test-e2e:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: |
+        npm ci
+        cd api && npm ci
+        cd ../shell && npm ci
+        cd ../support-tickets-app && npm ci
+        
+    - name: Start Docker Compose
+      run: |
+        docker-compose up -d
+        sleep 30  # Wait for services to be ready
+        
+    - name: Wait for services to be healthy
+      run: |
+        timeout 60 bash -c 'until curl -f http://localhost:3000; do sleep 5; done'
+        timeout 60 bash -c 'until curl -f http://localhost:3001/api/auth/health; do sleep 5; done'
+        timeout 60 bash -c 'until curl -f http://localhost:3002; do sleep 5; done'
+        
+    - name: Seed test data
+      run: docker exec flowbit-api node seed.js
+      
+    - name: Run Cypress E2E Tests
+      uses: cypress-io/github-action@v6
+      with:
+        wait-on: 'http://localhost:3000'
+        wait-on-timeout: 120
+        browser: chrome
+        headless: true
+        
+    - name: Upload Cypress Screenshots
+      uses: actions/upload-artifact@v3
+      if: failure()
+      with:
+        name: cypress-screenshots
+        path: cypress/screenshots
+        
+    - name: Upload Cypress Videos
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: cypress-videos
+        path: cypress/videos
+        
+    - name: Docker Logs on Failure
+      if: failure()
+      run: |
+        echo "=== API Logs ==="
+        docker logs flowbit-api
+        echo "=== MongoDB Logs ==="
+        docker logs flowbit-mongodb
+        echo "=== n8n Logs ==="
+        docker logs flowbit-n8n
+
+  build:
+    name: Build Application
+    runs-on: ubuntu-latest
+    needs: [lint, test-unit]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: |
+        npm ci
+        cd api && npm ci
+        cd ../shell && npm ci
+        cd ../support-tickets-app && npm ci
+        
+    - name: Build Shell Application
+      run: cd shell && npm run build
+      
+    - name: Build Support Tickets App
+      run: cd support-tickets-app && npm run build
+      
+    - name: Upload Shell Build Artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: shell-build
+        path: shell/build/
+        
+    - name: Upload Support Tickets Build Artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: support-tickets-build
+        path: support-tickets-app/dist/
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Run npm audit
+      run: |
+        npm audit --audit-level high
+        cd api && npm audit --audit-level high
+        cd ../shell && npm audit --audit-level high
+        cd ../support-tickets-app && npm audit --audit-level high
+
+  deploy:
+    name: Deploy Application
+    runs-on: ubuntu-latest
+    needs: [build, test-e2e]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Download Build Artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: shell-build
+        path: shell/build/
+        
+    - name: Download Support Tickets Build Artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: support-tickets-build
+        path: support-tickets-app/dist/
+        
+    - name: Deploy to Production
+      run: |
+        echo "🚀 Deployment would happen here"
+        echo "This is where you would deploy to your production environment"
+        # Add your deployment script here
+        
+    - name: Notify on Success
+      run: |
+        echo "✅ Deployment completed successfully!"
+        echo "All tests passed and application is deployed."

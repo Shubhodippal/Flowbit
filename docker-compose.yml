@@ -1,0 +1,108 @@
+version: '3.8'
+services:
+  mongodb:
+    image: mongo:6
+    container_name: flowbit-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGO_INITDB_DATABASE: flowbit
+    volumes:
+      - mongo_data:/data/db
+      - mongo_config:/data/configdb
+    networks:
+      - flowbit-network
+    command: --wiredTigerCacheSizeGB 1
+
+  n8n:
+    image: n8nio/n8n
+    container_name: flowbit-n8n
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=admin
+      - N8N_BASIC_AUTH_PASSWORD=password
+      - WEBHOOK_URL=http://api:3001
+      - N8N_HOST=0.0.0.0
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - n8n_files:/files
+    depends_on:
+      - mongodb
+    networks:
+      - flowbit-network
+
+  api:
+    build: ./api
+    container_name: flowbit-api
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=development
+      - MONGODB_URI=mongodb://admin:password@mongodb:27017/flowbit?authSource=admin
+      - JWT_SECRET=your-super-secret-jwt-key-flowbit-2025
+      - WEBHOOK_SECRET=flowbit-webhook-secret-2025
+      - N8N_URL=http://n8n:5678
+      - N8N_API_KEY=n8n-api-key
+    depends_on:
+      - mongodb
+      - n8n
+    volumes:
+      - ./api:/app
+      - /app/node_modules
+      - api_logs:/app/logs
+    networks:
+      - flowbit-network
+
+  shell:
+    build: ./shell
+    container_name: flowbit-shell
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:3001
+      - REACT_APP_SUPPORT_TICKETS_URL=http://localhost:3002
+    volumes:
+      - ./shell:/app
+      - /app/node_modules
+    networks:
+      - flowbit-network
+
+  support-tickets-app:
+    build: ./support-tickets-app
+    container_name: flowbit-support-tickets
+    restart: unless-stopped
+    ports:
+      - "3002:3002"
+    environment:
+      - REACT_APP_API_URL=http://localhost:3001
+    volumes:
+      - ./support-tickets-app:/app
+      - /app/node_modules
+    networks:
+      - flowbit-network
+
+volumes:
+  mongo_data:
+    driver: local
+  mongo_config:
+    driver: local
+  n8n_data:
+    driver: local
+  n8n_files:
+    driver: local
+  api_logs:
+    driver: local
+
+networks:
+  flowbit-network:
+    driver: bridge
