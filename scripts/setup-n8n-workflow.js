@@ -33,7 +33,7 @@ async function setupN8nWorkflow() {
     await waitForN8n();
     
     // Read the workflow file
-    const workflowPath = path.join(__dirname, '../n8n-workflows/flowbit-ticket-workflow.json');
+    const workflowPath = path.join(__dirname, '../n8n-workflows/flowbit-ticket-workflow-fixed.json');
     
     if (!fs.existsSync(workflowPath)) {
       throw new Error(`Workflow file not found: ${workflowPath}`);

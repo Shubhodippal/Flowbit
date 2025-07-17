@@ -147,14 +147,13 @@ node scripts/test-complete-integration.js
 ## ⚠️ Known Limitations
 
 ### Technical Constraints
-- **n8n Workflow**: Fixed 5-second processing delay, limited error handling
+- **n8n Workflow**: 5-10 second processing delay
 - **Frontend**: Basic responsive design, minimal accessibility features  
 - **Scalability**: Single MongoDB instance, no clustering or load balancing
 - **Testing**: Integration tests require manual tenant setup, limited edge case coverage
 
 ### Platform Dependencies
 - **Docker Required**: All components containerized, no standalone deployment option
-- **Port Conflicts**: Uses fixed ports (3000-3002, 5678, 27017) - may conflict with existing services
 - **Network**: Containers must communicate on same Docker network
 
 ### Data Management
