@@ -65,6 +65,9 @@ app.use('/webhook', webhookRoutes);
 app.use('/api/test', testRoutes);
 app.use('/api', testRoutes); // For /api/seed endpoint
 
+// Admin routes - use the userRoutes for admin endpoints
+app.use('/admin', userRoutes);
+
 // Error handling middleware
 app.use((err, req, res, _next) => {
   console.error(err.stack);

@@ -54,6 +54,7 @@ const Layout = ({ children }) => {
     handleClose();
   };
 
+  // Base menu items for all users
   const menuItems = [
     {
       text: 'Dashboard',
@@ -66,6 +67,22 @@ const Layout = ({ children }) => {
       path: `/${screen.id}`
     }))
   ];
+
+  // Add admin-only links if user is Admin
+  if (user?.role === 'Admin') {
+    menuItems.push(
+      {
+        text: 'Admin Dashboard',
+        icon: <DashboardIcon color="secondary" />,
+        path: '/admin/dashboard-stats'
+      },
+      {
+        text: 'Audit Logs',
+        icon: <SupportIcon color="secondary" />,
+        path: '/admin/audit-logs'
+      }
+    );
+  }
 
   const drawer = (
     <div>

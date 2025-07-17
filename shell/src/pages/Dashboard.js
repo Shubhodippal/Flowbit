@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Container,
   Typography,
@@ -6,12 +6,54 @@ import {
   Card,
   CardContent,
   Grid,
-  Chip
+  Chip,
+  Alert,
+  Table,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableCell
 } from '@mui/material';
 import { useAuth } from '../contexts/AuthContext';
+import axios from 'axios';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 const Dashboard = () => {
-  const { user, screens } = useAuth();
+  const { user } = useAuth();
+  const [recentTickets, setRecentTickets] = useState([]);
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        // Fetch recent tickets
+        const ticketsResponse = await axios.get('/api/tickets?limit=5');
+        setRecentTickets(ticketsResponse.data.tickets || []);
+
+        // If admin, fetch stats
+        if (user?.role === 'Admin') {
+          try {
+            const statsResponse = await axios.get('/admin/dashboard-stats');
+            setStats(statsResponse.data);
+          } catch (statsError) {
+            console.warn('Failed to fetch admin stats:', statsError);
+          }
+        }
+        
+        setError(null);
+      } catch (err) {
+        setError(err.response?.data?.error || 'Failed to load dashboard data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, [user?.role]);
+
+  if (loading) return <LoadingSpinner />;
 
   return (
     <Container maxWidth="lg" data-testid="dashboard-content">
@@ -19,8 +61,15 @@ const Dashboard = () => {
         <Typography variant="h4" gutterBottom>
           Welcome to Flowbit, {user?.name}!
         </Typography>
+
+        {error && (
+          <Alert severity="error" sx={{ mb: 3 }}>
+            {error}
+          </Alert>
+        )}
         
         <Grid container spacing={3}>
+          {/* Tenant Information */}
           <Grid item xs={12} md={6}>
             <Card>
               <CardContent>
@@ -39,26 +88,80 @@ const Dashboard = () => {
               </CardContent>
             </Card>
           </Grid>
+
+          {/* Admin Stats */}
+          {user?.role === 'Admin' && stats && (
+            <Grid item xs={12} md={6}>
+              <Card>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    System Statistics
+                  </Typography>
+                  <Typography variant="body1">
+                    <strong>Total Users:</strong> {stats.totalUsers}
+                  </Typography>
+                  <Typography variant="body1">
+                    <strong>Total Tickets:</strong> {stats.totalTickets}
+                  </Typography>
+                  <Typography variant="body1">
+                    <strong>Open Tickets:</strong> {stats.openTickets}
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+          )}
           
-          <Grid item xs={12} md={6}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  Available Applications
-                </Typography>
-                {screens.map((screen) => (
-                  <Box key={screen.id} sx={{ mb: 1 }}>
-                    <Chip 
-                      label={screen.name} 
-                      variant="outlined" 
-                      color="secondary"
-                    />
-                  </Box>
-                ))}
-              </CardContent>
-            </Card>
-          </Grid>
+          {/* Recent Tickets */}
+          {recentTickets.length > 0 && (
+            <Grid item xs={12}>
+              <Card>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    Recent Support Tickets
+                  </Typography>
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>ID</TableCell>
+                        <TableCell>Title</TableCell>
+                        <TableCell>Status</TableCell>
+                        <TableCell>Priority</TableCell>
+                        <TableCell>Created</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {recentTickets.map((ticket) => (
+                        <TableRow key={ticket._id}>
+                          <TableCell>{ticket._id.slice(-6)}</TableCell>
+                          <TableCell>{ticket.title}</TableCell>
+                          <TableCell>
+                            <Chip 
+                              label={ticket.status} 
+                              color={ticket.status === 'Open' ? 'error' : 
+                                     ticket.status === 'In Progress' ? 'warning' : 'success'}
+                              size="small"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Chip 
+                              label={ticket.priority} 
+                              variant="outlined"
+                              size="small"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            {new Date(ticket.createdAt).toLocaleDateString()}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </Grid>
+          )}
           
+          {/* System Status */}
           <Grid item xs={12}>
             <Card>
               <CardContent>

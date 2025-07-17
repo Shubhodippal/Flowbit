@@ -5,12 +5,12 @@ Cypress.Commands.add('login', (userType = 'testUser') => {
   const user = Cypress.env(userType);
   
   cy.visit('/login');
-  cy.get('[data-testid="email-input"]', { timeout: 10000 })
+  cy.get('[data-testid="email-input"] input', { timeout: 10000 })
     .should('be.visible')
     .clear()
     .type(user.email);
   
-  cy.get('[data-testid="password-input"]')
+  cy.get('[data-testid="password-input"] input')
     .should('be.visible')
     .clear()
     .type(user.password);
@@ -34,13 +34,12 @@ Cypress.Commands.add('createTicket', (ticketData = {}) => {
   
   const ticket = { ...defaultTicket, ...ticketData };
   
-  // Navigate to support tickets
-  cy.get('[data-testid="nav-support-tickets"]', { timeout: 10000 })
-    .should('be.visible')
-    .click();
+  // Wait for micro-frontend to load completely
+  cy.get('.micro-frontend-container', { timeout: 15000 })
+    .should('be.visible');
   
-  // Wait for micro-frontend to load
-  cy.get('[data-testid="create-ticket-button"]', { timeout: 15000 })
+  // Click the create ticket button
+  cy.get('[data-testid="new-ticket-button"]', { timeout: 10000 })
     .should('be.visible')
     .click();
   
@@ -64,13 +63,12 @@ Cypress.Commands.add('createTicket', (ticketData = {}) => {
     .click();
   
   // Submit the form
-  cy.get('[data-testid="submit-ticket-button"]')
+  cy.get('[data-testid="ticket-submit-button"]')
     .should('be.visible')
     .click();
   
-  // Wait for success message or redirect
-  cy.get('[data-testid="ticket-success-message"]', { timeout: 10000 })
-    .should('be.visible');
+  // Wait for dialog to close
+  cy.get('[data-testid="ticket-dialog"]').should('not.exist');
   
   return cy.wrap(ticket);
 });

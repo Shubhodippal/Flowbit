@@ -1,0 +1,271 @@
+{
+  "meta": {
+    "instanceId": "flowbit-instance"
+  },
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "flowbit-ticket",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ],
+      "webhookId": "flowbit-ticket-webhook"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.customerId}}",
+              "operation": "isNotEmpty"
+            }
+          ]
+        }
+      },
+      "id": "validate-data",
+      "name": "Validate Data",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "ticketId",
+              "value": "={{$json.ticketId}}"
+            },
+            {
+              "name": "customerId", 
+              "value": "={{$json.customerId}}"
+            },
+            {
+              "name": "title",
+              "value": "={{$json.title}}"
+            },
+            {
+              "name": "priority",
+              "value": "={{$json.priority}}"
+            },
+            {
+              "name": "processedAt",
+              "value": "={{$now}}"
+            },
+            {
+              "name": "workflowStatus",
+              "value": "processing"
+            }
+          ]
+        }
+      },
+      "id": "process-ticket",
+      "name": "Process Ticket",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [
+        680,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Simulate ticket processing logic\nconst ticket = $input.first().json;\n\n// Determine new status based on priority\nlet newStatus = 'in-progress';\nlet processingMessage = 'Ticket processed automatically';\n\n// Priority-based processing\nswitch(ticket.priority) {\n  case 'critical':\n    newStatus = 'escalated';\n    processingMessage = 'Critical ticket escalated to senior support';\n    break;\n  case 'high':\n    newStatus = 'in-progress';\n    processingMessage = 'High priority ticket assigned to specialist';\n    break;\n  case 'medium':\n    newStatus = 'in-progress';\n    processingMessage = 'Medium priority ticket queued for processing';\n    break;\n  case 'low':\n    newStatus = 'acknowledged';\n    processingMessage = 'Low priority ticket acknowledged';\n    break;\n  default:\n    newStatus = 'in-progress';\n}\n\n// Customer-specific processing\nif (ticket.customerId === 'LOGISTICS001') {\n  processingMessage += ' [LogisticsCo - Premium Support]';\n} else if (ticket.customerId === 'RETAIL001') {\n  processingMessage += ' [RetailGmbH - Standard Support]';\n}\n\n// Add some processing delay simulation\nconst processingTime = Math.floor(Math.random() * 5) + 1; // 1-5 seconds\n\nreturn [{\n  json: {\n    ...ticket,\n    newStatus: newStatus,\n    processingMessage: processingMessage,\n    processingTime: processingTime,\n    workflowResult: {\n      success: true,\n      message: processingMessage,\n      processedBy: 'n8n-automation',\n      timestamp: new Date().toISOString()\n    }\n  }\n}];"
+      },
+      "id": "ticket-logic",
+      "name": "Ticket Processing Logic",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "amount": "={{$json.processingTime}}",
+        "unit": "seconds"
+      },
+      "id": "processing-delay",
+      "name": "Processing Delay",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{$json.callbackUrl}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-webhook-secret",
+              "value": "flowbit-webhook-secret-2025"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "ticketId",
+              "value": "={{$json.ticketId}}"
+            },
+            {
+              "name": "status",
+              "value": "={{$json.newStatus}}"
+            },
+            {
+              "name": "workflowResult",
+              "value": "={{$json.workflowResult}}"
+            },
+            {
+              "name": "executionId",
+              "value": "={{$workflow.id}}-{{$execution.id}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "callback-webhook",
+      "name": "Send Callback",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1340,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\"success\": true, \"message\": \"Workflow executed successfully\", \"executionId\": \"{{$workflow.id}}-{{$execution.id}}\", \"ticketId\": \"{{$('Webhook').first().json.ticketId}}\"}",
+        "options": {}
+      },
+      "id": "success-response",
+      "name": "Success Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1560,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\"success\": false, \"error\": \"Invalid ticket data\", \"message\": \"Required fields missing: customerId or ticketId\"}",
+        "options": {}
+      },
+      "id": "error-response",
+      "name": "Error Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        680,
+        400
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Data": {
+      "main": [
+        [
+          {
+            "node": "Process Ticket",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Response", 
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Ticket": {
+      "main": [
+        [
+          {
+            "node": "Ticket Processing Logic",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ticket Processing Logic": {
+      "main": [
+        [
+          {
+            "node": "Processing Delay",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Processing Delay": {
+      "main": [
+        [
+          {
+            "node": "Send Callback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Callback": {
+      "main": [
+        [
+          {
+            "node": "Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1",
+  "id": "flowbit-ticket-workflow",
+  "name": "Flowbit Ticket Processing Workflow"
+}

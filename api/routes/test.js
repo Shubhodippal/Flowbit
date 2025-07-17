@@ -34,7 +34,7 @@ router.delete('/cleanup', authMiddleware, async (req, res) => {
     // Clean test data for current tenant only
     const deleted = await Ticket.deleteMany({ 
       customerId: req.customerId,
-      title: { $regex: /^(E2E Test|Test Ticket|Cypress Test)/ } 
+      title: { $regex: /^(E2E Test|Test Ticket)/ } 
     });
 
     await AuditLog.deleteMany({ 
@@ -59,10 +59,38 @@ router.post('/seed', async (req, res) => {
       return res.status(403).json({ error: 'Seed endpoint not available in production' });
     }
 
-    // Run the seed script
-    require('../../seed');
+    const User = require('../models/User');
     
-    res.json({ message: 'Database seeded successfully' });
+    // Check if test users already exist
+    const existingUser = await User.findOne({ email: 'admin@logisticsco.com' });
+    if (existingUser) {
+      return res.json({ message: 'Test users already exist' });
+    }
+    
+    // Create test users if they don't exist
+    const testUsers = [
+      {
+        email: 'admin@logisticsco.com',
+        password: 'password123',
+        name: 'John Smith',
+        role: 'Admin',
+        customerId: 'logisticsco'
+      },
+      {
+        email: 'admin@retailgmbh.com',
+        password: 'password123',
+        name: 'Maria Schmidt',
+        role: 'Admin',
+        customerId: 'retailgmbh'
+      }
+    ];
+    
+    for (const userData of testUsers) {
+      const user = new User(userData);
+      await user.save();
+    }
+    
+    res.json({ message: 'Test users created successfully' });
   } catch (error) {
     console.error('Seed error:', error);
     res.status(500).json({ error: 'Database seeding failed' });

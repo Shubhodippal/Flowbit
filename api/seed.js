@@ -156,8 +156,16 @@ const seedData = async () => {
   } finally {
     await mongoose.disconnect();
     console.log('\\nDisconnected from MongoDB');
-    process.exit(0);
+    if (require.main === module) {
+      process.exit(0);
+    }
   }
 };
 
-seedData();
+// Export the function for use as a module
+module.exports = seedData;
+
+// Run the seed function if this file is executed directly
+if (require.main === module) {
+  seedData();
+}

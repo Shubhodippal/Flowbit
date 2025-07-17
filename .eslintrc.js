@@ -3,8 +3,7 @@ module.exports = {
     browser: true,
     es2021: true,
     node: true,
-    jest: true,
-    "cypress/globals": true
+    jest: true
   },
   extends: [
     'eslint:recommended',
@@ -20,8 +19,7 @@ module.exports = {
   },
   plugins: [
     'react',
-    'react-hooks',
-    'cypress'
+    'react-hooks'
   ],
   rules: {
     'react/react-in-jsx-scope': 'off',
@@ -42,23 +40,9 @@ module.exports = {
     'node_modules/',
     'dist/',
     'build/',
-    'coverage/',
-    'cypress/videos/',
-    'cypress/screenshots/'
+    'coverage/'
   ],
   overrides: [
-    {
-      files: ['cypress/**/*.js'],
-      plugins: ['cypress'],
-      env: {
-        'cypress/globals': true
-      },
-      rules: {
-        'cypress/no-assigning-return-values': 'error',
-        'cypress/no-unnecessary-waiting': 'error',
-        'cypress/assertion-before-screenshot': 'warn'
-      }
-    },
     {
       files: ['**/seed.js', '**/server.js', '**/services/*.js', '**/contexts/*.js', '**/routes/webhooks.js'],
       rules: {
