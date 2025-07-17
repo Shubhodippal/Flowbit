@@ -1,7 +1,7 @@
 const express = require('express');
-const jwt = require('jsonwebtoken');
 const Joi = require('joi');
 const User = require('../models/User');
+const jwt = require('jsonwebtoken');
 const router = express.Router();
 
 // Health check endpoint
@@ -45,19 +45,15 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // Generate JWT
-    const token = jwt.sign(
-      { 
-        userId: user._id, 
-        customerId: user.customerId, 
-        role: user.role 
-      },
-      process.env.JWT_SECRET,
-      { expiresIn: '24h' }
-    );
+    // Generate tokens
+    const { accessToken, refreshToken } = user.generateTokens();
+    
+    // Store refresh token
+    await user.addRefreshToken(refreshToken);
 
     res.json({
-      token,
+      accessToken,
+      refreshToken,
       user: {
         id: user._id,
         email: user.email,
@@ -99,19 +95,15 @@ router.post('/register', async (req, res) => {
 
     await user.save();
 
-    // Generate JWT
-    const token = jwt.sign(
-      { 
-        userId: user._id, 
-        customerId: user.customerId, 
-        role: user.role 
-      },
-      process.env.JWT_SECRET,
-      { expiresIn: '24h' }
-    );
+    // Generate tokens
+    const { accessToken, refreshToken } = user.generateTokens();
+    
+    // Store refresh token
+    await user.addRefreshToken(refreshToken);
 
     res.status(201).json({
-      token,
+      accessToken,
+      refreshToken,
       user: {
         id: user._id,
         email: user.email,
@@ -122,6 +114,79 @@ router.post('/register', async (req, res) => {
     });
   } catch (error) {
     console.error('Registration error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// POST /api/auth/refresh
+router.post('/refresh', async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+    
+    if (!refreshToken) {
+      return res.status(401).json({ error: 'Refresh token required' });
+    }
+
+    // Verify refresh token
+    let decoded;
+    try {
+      decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET);
+    } catch (error) {
+      return res.status(401).json({ error: 'Invalid refresh token' });
+    }
+
+    // Find user and check if refresh token exists
+    const user = await User.findById(decoded.userId);
+    if (!user || !user.isActive || !user.hasValidRefreshToken(refreshToken)) {
+      return res.status(401).json({ error: 'Invalid refresh token' });
+    }
+
+    // Generate new tokens
+    const tokens = user.generateTokens();
+    
+    // Remove old refresh token and add new one
+    await user.removeRefreshToken(refreshToken);
+    await user.addRefreshToken(tokens.refreshToken);
+
+    res.json({
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+      user: {
+        id: user._id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        customerId: user.customerId
+      }
+    });
+  } catch (error) {
+    console.error('Token refresh error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// POST /api/auth/logout
+router.post('/logout', async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+    
+    if (refreshToken) {
+      // Verify and remove refresh token
+      try {
+        const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET);
+        const user = await User.findById(decoded.userId);
+        if (user) {
+          await user.removeRefreshToken(refreshToken);
+        }
+      } catch (error) {
+        // Token might be expired or invalid, but we still want to logout
+        console.warn('Logout with invalid refresh token:', error.message);
+      }
+    }
+
+    res.json({ message: 'Logged out successfully' });
+  } catch (error) {
+    console.error('Logout error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });

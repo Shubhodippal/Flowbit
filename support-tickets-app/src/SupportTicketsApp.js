@@ -40,12 +40,49 @@ const api = axios.create({
 
 // Add token from localStorage if available
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem('accessToken') || localStorage.getItem('token'); // Backward compatibility
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
 });
+
+// Add response interceptor for token refresh
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+
+    if (error.response?.status === 401 && 
+        error.response?.data?.code === 'TOKEN_EXPIRED' && 
+        !originalRequest._retry) {
+      
+      originalRequest._retry = true;
+      
+      try {
+        const refreshToken = localStorage.getItem('refreshToken');
+        if (refreshToken) {
+          const response = await axios.post(`${API_URL}/api/auth/refresh`, { refreshToken });
+          const { accessToken, refreshToken: newRefreshToken } = response.data;
+          
+          localStorage.setItem('accessToken', accessToken);
+          localStorage.setItem('refreshToken', newRefreshToken);
+          
+          originalRequest.headers['Authorization'] = `Bearer ${accessToken}`;
+          return api(originalRequest);
+        }
+      } catch (refreshError) {
+        console.error('Token refresh failed:', refreshError);
+        // Redirect to login or show auth error
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        window.location.reload();
+      }
+    }
+
+    return Promise.reject(error);
+  }
+);
 
 const SupportTicketsApp = () => {
   const [tickets, setTickets] = useState([]);

@@ -38,7 +38,7 @@ describe('Tenant Isolation Tests', () => {
         email: 'admin-a@logisticsco.com',
         password: 'password123'
       });
-    tenantAToken = loginA.body.token;
+    tenantAToken = loginA.body.accessToken;
 
     const loginB = await request(app)
       .post('/api/auth/login')
@@ -46,7 +46,7 @@ describe('Tenant Isolation Tests', () => {
         email: 'admin-b@retailgmbh.com',
         password: 'password123'
       });
-    tenantBToken = loginB.body.token;
+    tenantBToken = loginB.body.accessToken;
   });
 
   test('Admin from Tenant A cannot read Tenant B data', async () => {
@@ -172,7 +172,7 @@ describe('RBAC Tests', () => {
         password: 'password123'
       });
 
-    const userToken = login.body.token;
+    const userToken = login.body.accessToken;
 
     // Try to access admin route (user list) - should be forbidden
     const response = await request(app)
@@ -201,7 +201,7 @@ describe('RBAC Tests', () => {
         email: 'user-a@logisticsco.com',
         password: 'password123'
       });
-    const userToken = loginResponse.body.token;
+    const userToken = loginResponse.body.accessToken;
 
     // Try to access admin-only route
     const adminResponse = await request(app)

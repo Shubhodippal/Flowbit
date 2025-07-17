@@ -52,6 +52,7 @@ services:
       - NODE_ENV=development
       - MONGODB_URI=mongodb://admin:password@mongodb:27017/flowbit?authSource=admin
       - JWT_SECRET=your-super-secret-jwt-key-flowbit-2025
+      - JWT_REFRESH_SECRET=your-super-secret-refresh-key-flowbit-2025
       - WEBHOOK_SECRET=flowbit-webhook-secret-2025
       - N8N_URL=http://n8n:5678
       - N8N_API_KEY=n8n-api-key

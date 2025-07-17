@@ -34,18 +34,22 @@ describe('Complete n8n Workflow Integration Test', () => {
       { 
         userId: adminUser._id, 
         customerId: adminUser.customerId,
-        role: adminUser.role 
+        role: adminUser.role,
+        type: 'access'
       },
-      process.env.JWT_SECRET || 'test-secret'
+      process.env.JWT_SECRET || 'test-secret',
+      { expiresIn: '1h' }
     );
 
     userToken = jwt.sign(
       { 
         userId: regularUser._id, 
         customerId: regularUser.customerId,
-        role: regularUser.role 
+        role: regularUser.role,
+        type: 'access'
       },
-      process.env.JWT_SECRET || 'test-secret'
+      process.env.JWT_SECRET || 'test-secret',
+      { expiresIn: '1h' }
     );
   });
 

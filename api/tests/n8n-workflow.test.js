@@ -24,9 +24,11 @@ describe('n8n Workflow Integration', () => {
       { 
         userId: user._id, 
         customerId: user.customerId,
-        role: user.role 
+        role: user.role,
+        type: 'access'
       },
-      process.env.JWT_SECRET || 'test-secret'
+      process.env.JWT_SECRET || 'test-secret',
+      { expiresIn: '1h' }
     );
   });
 
