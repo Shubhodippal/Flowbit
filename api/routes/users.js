@@ -39,6 +39,19 @@ try {
             module: "./SupportTicketsApp"
           }
         ]
+      },
+      "INTEGRATION-TEST": {
+        name: "Integration Test Tenant",
+        customerId: "INTEGRATION-TEST",
+        screens: [
+          {
+            id: "support-tickets",
+            name: "Support Tickets",
+            url: "http://localhost:3002/remoteEntry.js",
+            scope: "supportTicketsApp",
+            module: "./SupportTicketsApp"
+          }
+        ]
       }
     }
   };
