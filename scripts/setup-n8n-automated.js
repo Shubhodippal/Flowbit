@@ -24,7 +24,7 @@ async function setupWorkflowViaDockerExec() {
     const copyCommand = `docker cp "${workflowPath}" flowbit-n8n:/tmp/flowbit-workflow.json`;
     
     await new Promise((resolve, reject) => {
-      exec(copyCommand, (error, stdout, stderr) => {
+      exec(copyCommand, (error, _stdout, _stderr) => {
         if (error) {
           console.error('Copy error:', error);
           reject(error);
@@ -39,8 +39,8 @@ async function setupWorkflowViaDockerExec() {
     console.log('📥 Importing workflow into n8n...');
     const importCommand = `docker exec flowbit-n8n n8n import:workflow --input=/tmp/flowbit-workflow.json`;
     
-    await new Promise((resolve, reject) => {
-      exec(importCommand, (error, stdout, stderr) => {
+    await new Promise((resolve, _reject) => {
+      exec(importCommand, (error, stdout, _stderr) => {
         if (error) {
           console.log('Import via CLI might not be available, continuing with manual setup instructions...');
           resolve(); // Don't fail, just continue
@@ -75,7 +75,7 @@ async function testWebhookEndpoint() {
       callbackUrl: 'http://api:3001/webhook/ticket-done'
     };
     
-    const response = await axios.post(`${N8N_URL}/webhook/flowbit-ticket`, testPayload, {
+    await axios.post(`${N8N_URL}/webhook/flowbit-ticket`, testPayload, {
       headers: { 'Content-Type': 'application/json' },
       timeout: 10000
     });

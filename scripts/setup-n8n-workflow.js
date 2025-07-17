@@ -159,7 +159,7 @@ async function testWebhook() {
       callbackUrl: 'http://api:3001/webhook/ticket-done'
     };
     
-    const response = await axios.post(`${N8N_URL}/webhook/flowbit-ticket`, testPayload, {
+    await axios.post(`${N8N_URL}/webhook/flowbit-ticket`, testPayload, {
       headers: { 'Content-Type': 'application/json' },
       timeout: 10000
     });
