@@ -4,7 +4,7 @@ const auditMiddleware = require('../middleware/audit');
 const path = require('path');
 const fs = require('fs');
 
-// Load registry.json from the correct path
+// Load registry.json from the root directory
 let registry;
 try {
   const registryPath = path.join(__dirname, '../../registry.json');
@@ -64,7 +64,11 @@ router.get('/me/screens', authMiddleware, async (req, res) => {
   try {
     const tenant = registry.tenants[req.customerId];
     if (!tenant) {
-      return res.status(404).json({ error: 'Tenant configuration not found' });
+      return res.status(404).json({ 
+        error: 'Tenant configuration not found',
+        requestedTenant: req.customerId,
+        availableTenants: Object.keys(registry.tenants)
+      });
     }
 
     res.json({
