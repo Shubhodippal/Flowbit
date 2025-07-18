@@ -2,7 +2,7 @@
 
 > **Status: ✅ FULLY OPERATIONAL** | **Tests: 24/24 Passing** | **All R1-R6 Requirements Complete**
 
-A production-ready multi-tenant application demonstrating micro-frontend architecture, secure tenant data isolation, and automated workflow integration with n8n.
+A multi-tenant application demonstrating micro-frontend architecture, secure tenant data isolation, and automated workflow integration with n8n.
 
 ## ⚡ Quick Start
 
@@ -69,8 +69,8 @@ node scripts/test-complete-integration.js
               │                      │                   Webhooks
               └──────────────────────┼───────────────────────┤
                                      │                       │
-                        ┌────────────┴────────────┐         │
-                        │      Express API        │◄────────┘
+                        ┌────────────┴────────────┐          │
+                        │      Express API        │◄─────────┘
                         │     (Port 3001)         │
                         │                         │
                         │ • JWT Access/Refresh Tokens │
@@ -147,7 +147,6 @@ node scripts/test-complete-integration.js
 ## ⚠️ Known Limitations
 
 ### Technical Constraints
-- **n8n Workflow**: 5-10 second processing delay
 - **Frontend**: Basic responsive design, minimal accessibility features  
 - **Scalability**: Single MongoDB instance, no clustering or load balancing
 - **Testing**: Integration tests require manual tenant setup, limited edge case coverage
